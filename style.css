@@ -1,0 +1,154 @@
+/* style.css */
+* {
+    font-family: 'Noto Sans TC', sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: #f9f9f9;
+}
+
+header {
+    background-color: #1f2d56;
+    color: white;
+    padding: 2rem;
+    text-align: center;
+    font-size: 2.5rem;
+    font-weight: bold;
+    letter-spacing: 0.1rem;
+}
+
+nav {
+    background-color: #ffe4b5;
+    display: flex;
+    justify-content: space-around;
+    padding: 1rem 0;
+    color: #2c2c54;
+    font-size: 1.2rem;
+}
+
+nav a {
+    text-decoration: none;
+    /* 取消底線 */
+    color: inherit;
+    /* 繼承原文字色（或改為固定色） */
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+}
+
+section {
+    padding: 2rem;
+}
+
+.section-title {
+    background-color: #ffcc66;
+    border: 2px solid #ffcc66;
+    border-radius: 8px;
+    display: inline-block;
+    padding: 0.5rem 1rem;
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    color: #332244;
+}
+
+.dashboard {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+}
+
+.panel {
+    flex: 1 1 500px;
+    min-width: 300px;
+    max-width: 600px;
+    background-color: white;
+    padding: 1rem;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    min-height: 500px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+}
+
+.panel h3 {
+    margin-bottom: 0.5rem;
+    color: #332244;
+    font-size: 1.2rem;
+}
+
+select,
+#tag-filter {
+    width: 100%;
+    padding: 0.5rem;
+    font-size: 1rem;
+    margin-bottom: 1rem;
+    border: 1px solid #333;
+    box-sizing: border-box;
+    display: block;
+    background: #fff;
+}
+
+#tag-filter {
+    height: 240px;
+    /* 更高支援多選 */
+    overflow-y: auto;
+}
+
+.chart-placeholder {
+    height: 200px;
+    background-color: #e8f4f8;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: #888;
+    border-radius: 8px;
+}
+
+canvas#tag-chart {
+    width: 100% !important;
+    height: 100% !important;
+    margin-top: 1rem;
+}
+
+canvas {
+    font-family: 'Noto Sans TC', 'Microsoft JhengHei', sans-serif !important;
+    font-size: 14px !important;
+    word-break: keep-all;
+}
+
+
+
+@media (max-width: 768px) {
+    .dashboard {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .panel {
+        width: 90%;
+    }
+}
+
+.tab-link {
+    color: #333;
+    padding: 0.75rem 1.5rem;
+    margin: 0 1rem;
+    border-radius: 8px;
+    text-decoration: none;
+    display: inline-block;
+    transition: background-color 0.3s, color 0.3s;
+}
+
+.tab-link:hover {
+
+    color: #000;
+}
+
+.tab-link:visited {
+    color: #333;
+    /* 避免變紫 */
+}
