@@ -11,14 +11,21 @@ body {
 }
 
 header {
+    background-image: url('img/cover.png');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
     background-color: #1f2d56;
     color: white;
-    padding: 2rem;
+    padding: 5rem;
     text-align: center;
     font-size: 2.5rem;
     font-weight: bold;
     letter-spacing: 0.1rem;
+    margin-bottom: 0;
+    padding-bottom: 3;
 }
+
 
 nav {
     background-color: #ffe4b5;
