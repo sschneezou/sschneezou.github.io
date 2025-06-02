@@ -108,7 +108,7 @@
         <a href="#section-genres">不同遊戲類型的綜合分析</a> |
         <a href="#section-tags">遊戲標籤關鍵字雲</a>
     </nav>
-    <!-- 第一區塊 -->
+    
     <section id="section-compare">
         <div class="section-title">新發行遊戲 v.s. 暢銷遊戲的差異比較</div>
         <div class="dashboard">
@@ -130,7 +130,7 @@
             </div>
         </div>
     </section>
-    <!-- 第二區塊 -->
+    
     <section id="section-genres">
         <div class="section-title">不同遊戲類型的綜合分析</div>
         <div class="dashboard">
@@ -156,7 +156,7 @@
             </div>
         </div>
     </section>
-    <!-- 第三區塊 -->
+    
     <section id="section-tags">
         <div class="section-title">遊戲標籤關鍵字雲</div>
         <div class="dashboard">
@@ -167,7 +167,7 @@
             </div>
         </div>
     </section>
-    <!-- JavaScript -->
+    
     <script>
     const urls = ['steam_new_releases_selenium.json', 'steam_topsellers_selenium.json'];
     let allData = [],
@@ -502,7 +502,7 @@
         });
 
         const entries = Object.entries(tagFreq)
-            .filter(([tag, count]) => count >= 2) // 過濾太少次的詞
+            .filter(([tag, count]) => count >= 2) 
             .map(([tag, count]) => [tag, count]);
 
         const canvas = document.getElementById('tag-cloud-canvas');
