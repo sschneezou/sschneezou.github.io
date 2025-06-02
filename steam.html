@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Steam 資料數據視覺化分析</title>
+    <link rel="stylesheet" href="style_s.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/wordcloud@1.2.2/src/wordcloud2.js"></script>
+    <style>
+    body {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        background-color: #f5f5f5;
+    }
+
+    .dashboard {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 1rem;
+        max-width: 1200px;
+        margin: auto;
+        padding: 1rem;
+    }
+
+    .panel {
+        flex: 1 1 45%;
+        min-width: 550px;
+        background-color: #fff;
+        padding: 1rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .panel2 {
+        flex: 1 1 45%;
+        min-width: 1000px;
+        background-color: #fff;
+        padding: 1rem;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+    .multiselect {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+    }
+
+    .selectBox {
+        display: flex;
+        align-items: center;
+        border: 1px solid #999;
+        padding: 0.5rem;
+        background-color: #fff;
+        cursor: pointer;
+        justify-content: space-between;
+    }
+
+    .selectBox::after {
+        content: "▾";
+        margin-left: auto;
+    }
+
+    .checkboxes {
+        display: none;
+        border: 1px solid #999;
+        position: absolute;
+        background-color: #fff;
+        width: 100%;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1;
+    }
+
+    .checkboxes label {
+        display: block;
+        padding: 0.4rem;
+    }
+
+    .multiselect.active .checkboxes {
+        display: block;
+    }
+
+    header,
+    nav,
+    section {
+        margin-bottom: 2rem;
+    }
+
+    .section-title {
+        font-size: 1.3rem;
+        font-weight: bold;
+        margin: 1rem 0;
+    }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Steam 資料數據視覺化分析</h1>
+    </header>
+    <nav>
+        <a href="#section-compare">新發行遊戲 v.s. 暢銷遊戲的差異比較</a> |
+        <a href="#section-genres">不同遊戲類型的綜合分析</a> |
+        <a href="#section-tags">遊戲標籤關鍵字雲</a>
+    </nav>
+    <!-- 第一區塊 -->
+    <section id="section-compare">
+        <div class="section-title">新發行遊戲 v.s. 暢銷遊戲的差異比較</div>
+        <div class="dashboard">
+            <div class="panel">
+                <h3>遊戲類型</h3>
+                <div class="multiselect" id="tag-multiselect">
+                    <div class="selectBox" onclick="toggleCheckboxes()"><span>請選擇標籤</span></div>
+                    <div class="checkboxes" id="tag-checkboxes"></div>
+                </div>
+                <div style="height: 400px;">
+                    <canvas id="tag-chart"></canvas>
+                </div>
+            </div>
+            <div class="panel">
+                <h3>價格比較</h3>
+                <div style="height: 400px;">
+                    <canvas id="price-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- 第二區塊 -->
+    <section id="section-genres">
+        <div class="section-title">不同遊戲類型的綜合分析</div>
+        <div class="dashboard">
+            <div class="panel">
+                <h3>暢銷遊戲價格分布</h3>
+                <div class="multiselect" id="genre-multiselect">
+                    <div class="selectBox" onclick="toggleGenreCheckboxes()"><span>請選擇遊戲類型</span></div>
+                    <div class="checkboxes" id="genre-checkboxes"></div>
+                </div>
+                <div style="height: 400px;">
+                    <canvas id="genre-scatter-canvas"></canvas>
+                </div>
+            </div>
+            <div class="panel">
+                <h3>好評率分析</h3>
+                <div class="multiselect" id="review-multiselect">
+                    <div class="selectBox" onclick="toggleReviewCheckboxes()"><span>請選擇遊戲類型</span></div>
+                    <div class="checkboxes" id="review-checkboxes"></div>
+                </div>
+                <div style="height: 400px;">
+                    <canvas id="review-chart"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- 第三區塊 -->
+    <section id="section-tags">
+        <div class="section-title">遊戲標籤關鍵字雲</div>
+        <div class="dashboard">
+            <div class="panel2">
+                <div style="height: 600px;">
+                    <canvas id="tag-cloud-canvas" width="1100" height="600"></canvas>
+                </div>
+            </div>
+        </div>
+    </section>
+    <!-- JavaScript -->
+    <script>
+    const urls = ['steam_new_releases_selenium.json', 'steam_topsellers_selenium.json'];
+    let allData = [],
+        priceChart, genreScatterChart;
+
+    function toggleCheckboxes() {
+        const el = document.getElementById("tag-multiselect");
+        if (el) el.classList.toggle("active");
+    }
+
+    function toggleGenreCheckboxes() {
+        const el = document.getElementById("genre-multiselect");
+        if (el) el.classList.toggle("active");
+    }
+
+    function toggleReviewCheckboxes() {
+        const el = document.getElementById("review-multiselect");
+        if (el) el.classList.toggle("active");
+    }
+
+
+    async function loadAllData() {
+        for (let i = 0; i < urls.length; i++) {
+            try {
+                const res = await fetch(urls[i]);
+                const data = await res.json();
+                allData.push({
+                    source: urls[i].includes('new') ? '新發行' : '暢銷',
+                    items: data
+                });
+            } catch (e) {
+                console.error("資料載入錯誤：", e);
+            }
+        }
+
+        loadTagsAndChart();
+        renderPriceChart();
+        initTagChart();
+        initGenreMultiselect();
+        updateGenreScatterChart();
+        initReviewMultiselect();
+        updateReviewChart();
+        renderTagCloud();
+
+
+    }
+
+    function loadTagsAndChart() {
+        const tagSet = new Set();
+        for (let entry of allData) {
+            for (let game of entry.items) {
+                if (Array.isArray(game.genres)) {
+                    game.genres.forEach(tag => tagSet.add(tag));
+                }
+            }
+        }
+        const container = document.getElementById('tag-checkboxes');
+        container.innerHTML = '';
+        Array.from(tagSet).sort().forEach(tag => {
+            const label = document.createElement('label');
+            label.innerHTML = `<input type="checkbox" value="${tag}" onchange="updateTagChart()"> ${tag}`;
+            container.appendChild(label);
+        });
+    }
+
+    function updateTagChart() {
+        const selected = Array.from(document.querySelectorAll('#tag-checkboxes input:checked')).map(cb => cb.value);
+        let foundNew = null,
+            foundTop = null;
+        for (let d of allData) {
+            if (d.source === '新發行') foundNew = d;
+            if (d.source === '暢銷') foundTop = d;
+        }
+        const newList = (foundNew && foundNew.items) ? foundNew.items : [];
+        const topList = (foundTop && foundTop.items) ? foundTop.items : [];
+
+        const newCounts = selected.map(tag =>
+            newList.filter(game => Array.isArray(game.genres) && game.genres.includes(tag)).length
+        );
+        const topCounts = selected.map(tag =>
+            topList.filter(game => Array.isArray(game.genres) && game.genres.includes(tag)).length
+        );
+
+        window.tagChart.data.labels = selected;
+        window.tagChart.data.datasets[0].data = topCounts;
+        window.tagChart.data.datasets[1].data = newCounts;
+        window.tagChart.update();
+    }
+
+    function initTagChart() {
+        const ctx = document.getElementById('tag-chart').getContext('2d');
+        window.tagChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [
+                    { label: '暢銷遊戲', backgroundColor: 'rgba(0,200,255,0.7)', data: [] },
+                    { label: '新發行遊戲', backgroundColor: 'rgba(0,80,200,0.7)', data: [] }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, title: { display: true, text: '遊戲數量' } }
+                }
+            }
+        });
+    }
+
+    function renderPriceChart() {
+        let foundTop = null,
+            foundNew = null;
+        for (let d of allData) {
+            if (d.source === '新發行') foundNew = d;
+            if (d.source === '暢銷') foundTop = d;
+        }
+        const topList = (foundTop && foundTop.items) ? foundTop.items : [];
+        const newList = (foundNew && foundNew.items) ? foundNew.items : [];
+
+        const priceGroups = [
+            { label: "免費遊玩", min: 0, max: 0 },
+            { label: "1-99", min: 1, max: 99 },
+            { label: "100-499", min: 100, max: 499 },
+            { label: "500-999", min: 500, max: 999 },
+            { label: "1000-1499", min: 1000, max: 1499 },
+            { label: "1500-1999", min: 1500, max: 1999 },
+            { label: "2000以上", min: 2000, max: Infinity }
+        ];
+
+        function categorize(data) {
+            const counts = new Array(priceGroups.length).fill(0);
+            for (let item of data) {
+                const price = parseFloat(item.price);
+                if (!isNaN(price)) {
+                    for (let i = 0; i < priceGroups.length; i++) {
+                        if (price >= priceGroups[i].min && price <= priceGroups[i].max) {
+                            counts[i]++;
+                            break;
+                        }
+                    }
+                }
+            }
+            return counts;
+        }
+
+        const ctx = document.getElementById('price-chart').getContext('2d');
+        if (priceChart) priceChart.destroy();
+        priceChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: priceGroups.map(g => g.label),
+                datasets: [
+                    { label: '暢銷遊戲', backgroundColor: 'rgba(0,200,255,0.7)', data: categorize(topList) },
+                    { label: '新發行遊戲', backgroundColor: 'rgba(0,80,200,0.7)', data: categorize(newList) }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, title: { display: true, text: '遊戲數量' } }
+                }
+            }
+        });
+    }
+
+    function initGenreMultiselect() {
+        const foundTop = allData.find(d => d.source === '暢銷');
+        const genreSet = new Set();
+        if (foundTop && foundTop.items) {
+            foundTop.items.forEach(game => {
+                (game.genres || []).forEach(g => genreSet.add(g));
+            });
+        }
+        const container = document.getElementById('genre-checkboxes');
+        container.innerHTML = '';
+        Array.from(genreSet).sort().forEach(genre => {
+            const label = document.createElement('label');
+            label.innerHTML = `<input type="checkbox" value="${genre}" onchange="updateGenreScatterChart()"> ${genre}`;
+            container.appendChild(label);
+        });
+    }
+
+    function updateGenreScatterChart() {
+        const selectedGenres = Array.from(document.querySelectorAll('#genre-checkboxes input:checked')).map(cb => cb.value);
+        const foundTop = allData.find(d => d.source === '暢銷');
+        const topList = (foundTop && foundTop.items) ? foundTop.items : [];
+        const genreMap = {};
+
+        topList.forEach(game => {
+            const price = parseFloat(game.price);
+            if (!isNaN(price)) {
+                (game.genres || []).forEach(genre => {
+                    if (selectedGenres.includes(genre)) {
+                        if (!genreMap[genre]) genreMap[genre] = [];
+                        genreMap[genre].push({ x: genre, y: price });
+                    }
+                });
+            }
+        });
+
+        const datasets = Object.keys(genreMap).map((genre, i) => ({
+            label: genre,
+            data: genreMap[genre],
+            backgroundColor: `hsl(${i * 47 % 360}, 50%, 70%)`,
+            showLine: false
+        }));
+
+        const ctx = document.getElementById('genre-scatter-canvas').getContext('2d');
+        if (genreScatterChart) genreScatterChart.destroy();
+        genreScatterChart = new Chart(ctx, {
+            type: 'scatter',
+            data: { datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    tooltip: { mode: 'nearest' },
+                    title: { display: true, text: '   ' }
+                },
+                scales: {
+                    x: { type: 'category', title: { display: true, text: '遊戲類型' } },
+                    y: { beginAtZero: true, title: { display: true, text: '價格（TWD）' } }
+                }
+            }
+        });
+    }
+    let reviewChart;
+
+    function initReviewMultiselect() {
+        const foundTop = allData.find(d => d.source === '暢銷');
+        const genreSet = new Set();
+        if (foundTop && foundTop.items) {
+            foundTop.items.forEach(game => {
+                if (Array.isArray(game.genres)) {
+                    game.genres.forEach(g => genreSet.add(g));
+                }
+            });
+        }
+
+        const container = document.getElementById('review-checkboxes');
+        container.innerHTML = '';
+        Array.from(genreSet).sort().forEach(genre => {
+            const label = document.createElement('label');
+            label.innerHTML = `<input type="checkbox" value="${genre}" onchange="updateReviewChart()"> ${genre}`;
+            container.appendChild(label);
+        });
+    }
+
+    function updateReviewChart() {
+        const selectedGenres = Array.from(document.querySelectorAll('#review-checkboxes input:checked')).map(cb => cb.value);
+        const foundTop = allData.find(d => d.source === '暢銷');
+        const topList = (foundTop && foundTop.items) ? foundTop.items : [];
+
+        const summaryCategories = ["極度好評", "大多好評", "褒貶不一", "大多負評", "負評如潮", "其他"];
+        const dataMap = {};
+
+        selectedGenres.forEach(genre => {
+            dataMap[genre] = {};
+            summaryCategories.forEach(summary => dataMap[genre][summary] = 0);
+        });
+
+        topList.forEach(game => {
+            const summary = game.review_summary || "其他";
+            const genres = game.genres || [];
+            genres.forEach(g => {
+                if (selectedGenres.includes(g)) {
+                    if (!dataMap[g][summary]) dataMap[g][summary] = 0;
+                    dataMap[g][summary]++;
+                }
+            });
+        });
+
+        const summaryColors = {
+            "極度好評": "#63cdda",
+            "大多好評": "#ffb347",
+            "褒貶不一": "#fdfd96",
+            "大多負評": "#cbaacb",
+            "負評如潮": "#ff6f69",
+            "其他": "#f5f5f5"
+        };
+
+        const datasets = summaryCategories.map(summary => ({
+            label: summary,
+            data: selectedGenres.map(g => dataMap[g][summary] || 0),
+            backgroundColor: summaryColors[summary] || "#9e9e9e",
+            stack: 'stack1'
+        }));
+
+
+        const ctx = document.getElementById('review-chart').getContext('2d');
+        if (reviewChart) reviewChart.destroy();
+        reviewChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: selectedGenres,
+                datasets: datasets
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: '各類型中不同好評率分類的分布'
+                    },
+                    tooltip: { mode: 'index', intersect: false }
+                },
+                scales: {
+                    x: { stacked: true },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        title: { display: true, text: '遊戲數量' }
+                    }
+                }
+            }
+        });
+    }
+
+    function renderTagCloud() {
+        const tagFreq = {};
+        allData.forEach(group => {
+            group.items.forEach(game => {
+                if (Array.isArray(game.tags)) {
+                    game.tags.forEach(tag => {
+                        tagFreq[tag] = (tagFreq[tag] || 0) + 1;
+                    });
+                }
+            });
+        });
+
+        const entries = Object.entries(tagFreq)
+            .filter(([tag, count]) => count >= 2) // 過濾太少次的詞
+            .map(([tag, count]) => [tag, count]);
+
+        const canvas = document.getElementById('tag-cloud-canvas');
+        WordCloud(canvas, {
+            list: entries,
+            gridSize: 8,
+            weightFactor: 3,
+            fontFamily: 'Helvetica',
+            color: function() {
+                const colors = ['#ffb6b9', '#fcd5ce', '#a2d2ff', '#cdb4db', '#b5ead7', '#ffdac1'];
+                return colors[Math.floor(Math.random() * colors.length)];
+            },
+            rotateRatio: 0.3,
+            rotationSteps: 2,
+            backgroundColor: '#ffffff'
+        });
+    }
+
+
+
+    loadAllData();
+    </script>
+</body>
+
+</html>
